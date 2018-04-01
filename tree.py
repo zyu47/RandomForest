@@ -9,7 +9,9 @@ class Tree:
         pass
 
     def build_tree(self, samples):
-        pass
+        self.head = Node()
+        for s in samples:
+            self.head.add(s)
 
     def find_nn_label(self, sample):
-        pass
+        return self.head.find_nearest_neighbor()
