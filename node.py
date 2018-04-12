@@ -1,4 +1,8 @@
-import parameters
+try:
+    from . import parameters
+except ImportError:
+    import parameters
+
 import random
 import numpy as np
 from scipy.stats import pearsonr
@@ -23,6 +27,10 @@ class Node:
             else:
                 self._right_child.add(sample)
         else:
+            # first check if sample already exists; if so, do not add sample into tree again
+            for i in self._items:
+                if np.all(i[0] == sample[0]):
+                    return
             self._items.append(sample)
             if len(self._items) > self._item_cnt_cap and self._split_condition_met():
                 self._split_node()
@@ -34,8 +42,10 @@ class Node:
             else:
                 return self._right_child.find_nearest_neighbor(sample)
         else:
-            distances = [self._distance_metric(sample, self._items[0]) for i in self._items]
-            return self._items[np.argmin(distances)][1]
+            if len(self._items) == 0:
+                raise RuntimeError('No matching label in database!')
+            distances = [self._distance_metric(sample, i) for i in self._items]
+            return self._items[np.argmin(distances)][1], np.min(distances)
 
     def _split_node(self):
         self._left_child = Node()
@@ -57,6 +67,9 @@ class Node:
         # save pivot information
         self._items = [pivot]
 
+        # change node status
+        self._internal_node = True
+
     def _split_condition_met(self):
         if self._split_method == 0:
             return True
@@ -68,8 +81,39 @@ class Node:
         :return: Distance between items a and b
         '''
         if self._distance_metric_type == 0:
-            return pearsonr(a[0].flatten(), b[0].flatten())
+            return -pearsonr(a[0].flatten(), b[0].flatten())[0]  # to match with euclidean distance measure, negate
         elif self._distance_metric_type == 1:
-            return np.linalg.norm(a[0].flatten(), b[0].flatten())
+            return np.linalg.norm(a[0].flatten()-b[0].flatten())
         else:
             raise ValueError('Unrecognized distance metric type')
+
+    def print_node(self, level=0):
+        '''
+        For testing purpose only
+        '''
+        if self._internal_node:
+            print('-'*level, self._dist_threshold)
+            self._left_child.print_node(level+1)
+            self._right_child.print_node(level+1)
+        else:
+            print('-'*level, len(self._items), '*')
+
+    def trace(self, sample, level=0):
+        if self._internal_node:
+            if self._distance_metric(sample, self._items[0]) <= self._dist_threshold:
+                print('-'*level,
+                      'GoTo left',
+                      'Threshold: ' + str(self._dist_threshold),
+                      'Dist: ' + str(self._distance_metric(sample, self._items[0])))
+                return self._left_child.trace(sample)
+            else:
+                print('-'*level,
+                      'GoTo right',
+                      'Threshold: ' + str(self._dist_threshold),
+                      'Dist: ' + str(self._distance_metric(sample, self._items[0])))
+                return self._right_child.trace(sample)
+        else:
+            # distances = [self._distance_metric(sample, i) for i in self._items]
+            # return self._items[np.argmin(distances)][1]
+            return self._items
+
