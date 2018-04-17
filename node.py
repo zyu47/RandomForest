@@ -20,31 +20,31 @@ class Node:
         self._items = []  # Note that each item has first element as vector and second as label
         self._dist_threshold = 0  # Any node with smaller distance to pivot than dist_threshold goes to left child
 
-    def add(self, sample):
+    def add(self, sample, label):
         if self._internal_node:  # if this node is already split
-            if self._distance_metric(sample, self._items[0]) <= self._dist_threshold:
-                self._left_child.add(sample)
+            if self._distance_metric(sample, self._items[0][0]) <= self._dist_threshold:
+                self._left_child.add(sample, label)
             else:
-                self._right_child.add(sample)
+                self._right_child.add(sample, label)
         else:
             # first check if sample already exists; if so, do not add sample into tree again
             for i in self._items:
                 if np.all(i[0] == sample[0]):
                     return
-            self._items.append(sample)
+            self._items.append((sample, label))
             if len(self._items) > self._item_cnt_cap and self._split_condition_met():
                 self._split_node()
 
     def find_nearest_neighbor(self, sample):
         if self._internal_node:
-            if self._distance_metric(sample, self._items[0]) <= self._dist_threshold:
+            if self._distance_metric(sample, self._items[0][0]) <= self._dist_threshold:
                 return self._left_child.find_nearest_neighbor(sample)
             else:
                 return self._right_child.find_nearest_neighbor(sample)
         else:
             if len(self._items) == 0:
                 raise RuntimeError('No matching label in database!')
-            distances = [self._distance_metric(sample, i) for i in self._items]
+            distances = [self._distance_metric(sample, i[0]) for i in self._items]
             return self._items[np.argmin(distances)][1], np.min(distances)
 
     def _split_node(self):
@@ -55,14 +55,14 @@ class Node:
         pivot = self._items[random.randint(0, len(self._items) - 1)]
 
         # calculate all the distances and choose median distance as splitting threshold
-        distances = [self._distance_metric(i, pivot) for i in self._items]
+        distances = [self._distance_metric(i[0], pivot[0]) for i in self._items]
         self._dist_threshold = np.median(distances)
 
         for i in self._items:
-            if self._distance_metric(i, pivot) <= self._dist_threshold:
-                self._left_child.add(i)
+            if self._distance_metric(i[0], pivot[0]) <= self._dist_threshold:
+                self._left_child.add(i[0], i[1])
             else:
-                self._right_child.add(i)
+                self._right_child.add(i[0], i[1])
 
         # save pivot information
         self._items = [pivot]
@@ -81,9 +81,11 @@ class Node:
         :return: Distance between items a and b
         '''
         if self._distance_metric_type == 0:
-            return -pearsonr(a[0].flatten(), b[0].flatten())[0]  # to match with euclidean distance measure, negate
+            return -pearsonr(a.flatten(), b.flatten())[0]  # to match with euclidean distance measure, negate
         elif self._distance_metric_type == 1:
-            return np.linalg.norm(a[0].flatten()-b[0].flatten())
+            return np.linalg.norm(a.flatten()-b.flatten())
+        elif self._distance_metric_type == 2:
+            return -np.sum(a.flatten() * b.flatten())
         else:
             raise ValueError('Unrecognized distance metric type')
 
@@ -99,18 +101,21 @@ class Node:
             print('-'*level, len(self._items), '*')
 
     def trace(self, sample, level=0):
+        '''
+        For testing purpose only
+        '''
         if self._internal_node:
-            if self._distance_metric(sample, self._items[0]) <= self._dist_threshold:
+            if self._distance_metric(sample, self._items[0][0]) <= self._dist_threshold:
                 print('-'*level,
                       'GoTo left',
                       'Threshold: ' + str(self._dist_threshold),
-                      'Dist: ' + str(self._distance_metric(sample, self._items[0])))
+                      'Dist: ' + str(self._distance_metric(sample, self._items[0][0])))
                 return self._left_child.trace(sample)
             else:
                 print('-'*level,
                       'GoTo right',
                       'Threshold: ' + str(self._dist_threshold),
-                      'Dist: ' + str(self._distance_metric(sample, self._items[0])))
+                      'Dist: ' + str(self._distance_metric(sample, self._items[0][0])))
                 return self._right_child.trace(sample)
         else:
             # distances = [self._distance_metric(sample, i) for i in self._items]

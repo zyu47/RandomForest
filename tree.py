@@ -13,16 +13,16 @@ class Tree:
     def read_tree(self):
         pass
 
-    def build_tree(self, samples):
+    def build_tree(self, samples, labels):
         self.head = Node()
         inds = random.sample(range(samples.shape[0]), samples.shape[0])  # shuffled index
         for i in inds:
-            self.head.add(samples[i])
+            self.head.add(samples[i], labels[i])
 
-    def add_bulk(self, samples):
+    def add_new(self, samples, labels):
         inds = random.sample(range(samples.shape[0]), samples.shape[0])  # shuffled index
         for i in inds:
-            self.head.add(samples[i])
+            self.head.add(samples[i], labels[i])
 
     def find_nn_label(self, sample):
         return self.head.find_nearest_neighbor(sample)
@@ -34,4 +34,7 @@ class Tree:
         self.head.print_node()
 
     def trace(self, sample):
+        '''
+        For testing purpose only
+        '''
         self.head.trace(sample)
