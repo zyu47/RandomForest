@@ -28,7 +28,7 @@ class Forest:
         samples_norm = self._normalize_sample(samples)
 
         for i in range(n_trees):
-            # print('Building Tree ' + str(i))
+            print('Building Tree #' + str(i))
             t = Tree()
             t.build_tree(samples_norm, labels)
             self.trees.append(t)
@@ -47,7 +47,7 @@ class Forest:
         for t in self.trees:
             t.add_new(samples_norm, labels)
 
-    def find_nn(self, samples, method=0):
+    def find_nn(self, samples, method=1):
         '''
         :param samples: A set of samples that need to find the labels
         :param method:  Either use majority voting (0) or return the closest sample label
