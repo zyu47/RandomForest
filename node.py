@@ -29,7 +29,7 @@ class Node:
         else:
             # first check if sample already exists; if so, do not add sample into tree again
             for i in self._items:
-                if np.all(i[0] == sample[0]):
+                if np.array_equal(i[0], sample):
                     return
             self._items.append((sample, label))
             if len(self._items) > self._item_cnt_cap and self._split_condition_met():
