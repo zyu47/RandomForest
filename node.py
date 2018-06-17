@@ -29,7 +29,7 @@ class Node:
         else:
             # first check if sample already exists; if so, do not add sample into tree again
             for i in self._items:
-                if np.all(i[0] == sample[0]):
+                if np.array_equal(i[0], sample):
                     return
             self._items.append((sample, label))
             if len(self._items) > self._item_cnt_cap and self._split_condition_met():
@@ -75,11 +75,11 @@ class Node:
             return True
 
     def _distance_metric(self, a, b):
-        '''
+        """
         :param a: One item
         :param b: Another item
         :return: Distance between items a and b
-        '''
+        """
         if self._distance_metric_type == 0:
             return -pearsonr(a.flatten(), b.flatten())[0]  # to match with euclidean distance measure, negate
         elif self._distance_metric_type == 1:
@@ -90,9 +90,9 @@ class Node:
             raise ValueError('Unrecognized distance metric type')
 
     def print_node(self, level=0):
-        '''
+        """
         For testing purpose only
-        '''
+        """
         if self._internal_node:
             print('-'*level, self._dist_threshold)
             self._left_child.print_node(level+1)
@@ -101,9 +101,9 @@ class Node:
             print('-'*level, len(self._items), '*')
 
     def trace(self, sample, level=0):
-        '''
+        """
         For testing purpose only
-        '''
+        """
         if self._internal_node:
             if self._distance_metric(sample, self._items[0][0]) <= self._dist_threshold:
                 print('-'*level,
