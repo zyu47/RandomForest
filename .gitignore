@@ -3,6 +3,7 @@
 tttest.py
 random_forest_viva/data/
 random_forest_viva/ReadMe.txt
+random_forest_viva/result/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
