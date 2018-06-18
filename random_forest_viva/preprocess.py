@@ -12,21 +12,19 @@ class PreProcess:
         res = []
         cap = av.open(path)
         for frame in cap.decode(video=0):
-            # print(frame.planes[0].buffer_size)
-            # for i in range(3):
-            #     print(frame.planes[i].height, frame.planes[i].width, frame.planes[i].buffer_size)
-            #     # res.append(np.frombuffer(frame.planes[i], np.uint8).reshape(frame.height, 256))
-            # x = np.frombuffer(frame.planes[0], np.uint8).reshape(frame.height, 256)
-            # res = np.array(res)
-            # plt.imshow(np.rollaxis(res, 0, 2))
-            x = np.asarray(frame.to_image())
-            print(np.all(x[:, :, 0] == x[:, :, 1]))
-            plt.imshow(x)
-            plt.show()
-            # print(np.all(x == 128))
-            break
+            x = np.asarray(frame.to_image())[:, :, 0]  # one frame
+            res.append(x)
+
+        return res
 
 
 if __name__ == '__main__':
     pp = PreProcess()
-    pp._read_one_avi('./data/03_10_02.avi')
+    res = pp._read_one_avi('./data/03_10_02.avi')
+    plt.figure(figsize=(10,10))
+    for i in range(5):
+        for j in range(5):
+            plt.subplot(i+1, j+1)
+            plt.imshow(res[i*5 + j])
+
+    plt.show()
