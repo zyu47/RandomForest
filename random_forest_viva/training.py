@@ -55,7 +55,7 @@ class Training:
         for epoch in range(max_epoch):
             for i in range(5):
                 print('*'*30)
-            print('EPOCH %d', epoch)
+            print('EPOCH %d' % epoch)
             for i in range(5):
                 print('*'*30)
             self.augmentation = self._get_new_augmentation()
@@ -77,8 +77,9 @@ class Training:
             training_xbatch = []
             for j in range(start, end):
                 file_name, offline_aug = training_samples[training_indices[j]]
+                # print(offline_aug)
                 video = self.primary_process.read_both_channels(file_name)
-                video = self.augmentation.offline_aug(video, offline_aug)
+                video = self.augmentation.offline_aug(video, int(offline_aug))
                 if np.random.choice([0, 1]) == 1:
                     # augmentation
                     video = self.augmentation.online_aug(video)
