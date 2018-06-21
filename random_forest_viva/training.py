@@ -1,8 +1,11 @@
+import os
+
 import numpy as np
 
 import solver
 import preprocess
 
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 
 class Training:
     def __init__(self, depth_path='./data/videos/depth'):
@@ -89,3 +92,4 @@ class Training:
 
 if __name__ == '__main__':
     train = Training()
+    train.run()
