@@ -58,7 +58,7 @@ class Training:
             print('EPOCH %d', epoch)
             for i in range(5):
                 print('*'*30)
-            self._get_new_augmentation()
+            self.augmentation = self._get_new_augmentation()
             self.batch_loss = []
             for xbatch, ybatch in self._create_batch(training_samples, training_labels):
                 loss = self.solver_instance.train_step(xbatch, ybatch, self.learning_rate)
