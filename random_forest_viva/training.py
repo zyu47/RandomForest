@@ -38,13 +38,19 @@ class Training:
 
     def run(self, leave_subject, max_epoch=300):
         # get training samples
-        training_samples = []
-        training_labels = []
+        training_samples = None
+        training_labels = None
         for k in self.all_labels_by_subject_id:
             if k == leave_subject:
                 continue
-            training_samples += self.all_samples_by_subject_id[k]
-            training_labels += self.all_labels_by_subject_id[k]
+            if training_samples is None:
+                training_samples = self.all_samples_by_subject_id[k]
+            else:
+                training_samples = np.concatenate((training_samples, self.all_samples_by_subject_id[k]), axis=0)
+            if training_labels is None:
+                training_labels = self.all_labels_by_subject_id[k]
+            else:
+                training_labels = np.concatenate((training_labels, self.all_labels_by_subject_id[k]), axis=0)
 
         for epoch in range(max_epoch):
             for i in range(5):
