@@ -9,8 +9,9 @@ from model import Model
 HParams = namedtuple("HParams",
                      ["model_type", "log_path",
                       "batch_size", "weight_decay",
-                      "lr_decay", "momentum",
+                      "lr_decay", "momentum", "keep_prob",
                       "is_loading_model"])
+
 
 class Solver:
     def __init__(self, hps):
@@ -55,13 +56,13 @@ class Solver:
         else:
             self.sess.run(tf.global_variables_initializer())
 
-    def train_step(self, xbatch, ybatch, learning_rate, keep_prob=0.5):
+    def train_step(self, xbatch, ybatch, learning_rate):
         _, summary, loss, acc, step = self.sess.run(
             fetches=[self.train_op, self.summaries, self.model.loss,
                      self.model.accuracy, self.global_step],
             feed_dict={self.model.input: xbatch,
                        self.model.labels: ybatch,
-                       self.model.keep_prob: keep_prob,
+                       self.model.keep_prob: self.hps.keep_prob,
                        self.lr: learning_rate,
                        self.momentum: self.hps.momentum})
         print("Training step %d: loss - %.2f; acc - %.2f%%" % (step, loss, acc*100))
@@ -98,5 +99,6 @@ if __name__ == '__main__':
                   weight_decay=0.005,
                   lr_decay=2,
                   momentum=0.9,
-                  is_loading_model=False)
+                  is_loading_model=False,
+                  keep_prob=0.5)
     s = Solver(hps)
