@@ -10,10 +10,10 @@ class Model:
         self.batch_size = batch_size
         self.l2_reg = l2_reg
         self.input = tf.placeholder(tf.float32,
-                                    shape=[self.batch_size, 32, 57, 125, 2],
+                                    shape=[None, 32, 57, 125, 2],
                                     name="input")
         self.labels = tf.placeholder(tf.int8,
-                                     shape=[self.batch_size, 19],
+                                     shape=[None, 19],
                                      name="output")
         self.keep_prob = tf.placeholder(tf.float32,
                                        shape=[],
@@ -23,11 +23,12 @@ class Model:
         self.loss_raw = None
         self.regularizers = 0
         self.loss = None  # loss with regularization
-
+        
+        self.model_type = model_type
         if model_type == 'lrn':
-            self.x = tf.reshape(self.input, [self.batch_size*32, 57, 125, 2])
+            self.x = tf.reshape(self.input, [-1, 57, 125, 2])
             self.x = tf.image.resize_nearest_neighbor(self.x, [28, 62])
-            self.x = tf.reshape(self.x, [self.batch_size, 32, 28, 62, 2])
+            self.x = tf.reshape(self.x, [-1, 32, 28, 62, 2])
             # convolution filters and pooling filters shape
             self.parameters['conv'] = [[(5, 5, 5, 2, 8), (1, 2, 2, 2, 1)],
                                        [(3, 5, 5, 8, 32), (1, 2, 2, 2, 1)],
@@ -45,7 +46,10 @@ class Model:
             result = self.__conv_pool_layer(shapes[0], shapes[1], ind, result)
 
         # flatten convolutional result
-        result = tf.reshape(result, [self.batch_size, -1])
+        if self.model_type == 'lrn':
+            result = tf.reshape(result, [-1, 64*2*2*4])
+        else:
+            raise ValueError('HRN not implemented yet')
 
         # fully-connected layer
         for ind, shapes in enumerate(parameters['fc'][:-1]):
@@ -59,7 +63,7 @@ class Model:
         self.loss = self.loss_raw + self.l2_reg * self.regularizers / 2
 
         # predicted labels
-        self.predicted_labels = tf.argmax(self.features, 1)
+        self.predicted_labels = tf.argmax(logits, 1)
         correct_prediction = tf.cast(tf.equal(self.predicted_labels, tf.argmax(self.labels, 1)), tf.float32)
         self.accuracy = tf.reduce_mean(correct_prediction)
 
