@@ -83,7 +83,7 @@ class Model:
         return tf.nn.max_pool3d(input=conv_relu,
                                 ksize=pool_shape,
                                 strides=pool_shape,
-                                padding='SAME')
+                                padding='VALID')
 
     def __fc_layer(self, out_dim, ind, pre_softmax, input_matrix):
         w = tf.get_variable(name="fc_w_%d" %ind, shape=[input_matrix.get_shape()[1], out_dim],
