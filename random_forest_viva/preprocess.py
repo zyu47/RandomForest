@@ -9,6 +9,7 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.interpolation import shift
 import matplotlib.pyplot as plt
 
+off_line_aug_num = 4
 HParams = namedtuple("HParams",
                      ["final_depth", "final_img_shape",
                       "angle_range", "scaling_range", "x_translate_range", "y_translate_range",
@@ -96,19 +97,36 @@ class SpatialAug:
         self.dropout_mask_depth = dropout_mask_depth
         self.dropout_mask_intensity = dropout_mask_intensity
 
-    def spatial_augmentation(self, video_in):
-        new_video = np.copy(video_in)
-        self._affine_and_sed_video(new_video)
-        self._fixed_pattern_dropout(new_video)
-        self._random_dropout(new_video)
-
-        return new_video
-
-    def _affine_and_sed_video(self, video_in):
+    def affine_video(self, video_in):
         for depth in range(video_in.shape[0]):
             for channel in range(video_in.shape[3]):
-                video_in[depth, :, :, channel] = self._spatial_elastic_deform(
-                    self._affine_img(video_in[depth, :, :, channel]))
+                video_in[depth, :, :, channel] = \
+                    self._affine_img(video_in[depth, :, :, channel])
+
+    def sed_video(self, video_in):
+        for depth in range(video_in.shape[0]):
+            for channel in range(video_in.shape[3]):
+                video_in[depth, :, :, channel] = \
+                    self._spatial_elastic_deform(video_in[depth, :, :, channel])
+
+    def fixed_pattern_dropout(self, video_in):
+        """
+        Change video in place
+        :param video_in:
+        :return: None
+        """
+        video_in[self.dropout_mask_depth] = 0
+        video_in[self.dropout_mask_intensity] = 0
+
+    def random_dropout(self, video_in):
+        """
+        Change video in place. We only need one mask because it's randomly generated,
+        therefore two channels are individually dropped out.
+        :param video_in:
+        :return: None
+        """
+        mask = np.random.choice([True, False], video_in.shape)
+        video_in[mask] = 0
 
     def _affine_img(self, img_in):
         M = cv2.getRotationMatrix2D((img_in.shape[1] // 2, img_in.shape[0] // 2),
@@ -120,29 +138,6 @@ class SpatialAug:
 
     def _spatial_elastic_deform(self, img_in):
         return map_coordinates(img_in, self.sed_indices, order=1).reshape(img_in.shape)
-
-    def _fixed_pattern_dropout(self, video_in):
-        """
-        Change video in place
-        :param video_in:
-        :return: None
-        """
-        video_in[self.dropout_mask_depth] = 0
-        video_in[self.dropout_mask_intensity] = 0
-
-    def _random_dropout(self, video_in):
-        """
-        Change video in place
-        :param video_in:
-        :return: None
-        """
-        mask_depth = np.random.choice([True, False], video_in.shape)
-        mask_depth[:, :, :, 0] = False
-        mask_intensity = np.random.choice([True, False], video_in.shape)
-        mask_intensity[:, :, :, 1] = False
-
-        video_in[mask_depth] = 0
-        video_in[mask_intensity] = 0
 
 
 class TemporalAug:
@@ -166,7 +161,8 @@ class Augmentation(GetParams):
 
     def offline_aug(self, video_in, type=0):
         """
-        Offline augmentation of video by reversing, mirroing and/or both
+        Offline augmentation of video by reversing, mirroing and/or both. It returns a copy
+        with the original copy intact.
         :param video_in: input video with first axis as time, second axis as height and third as width
         :param type: 0 - original, 1 - reversing, 2 - mirroring, 3 - reversing and mirroring
         :return: augmented video
@@ -183,15 +179,29 @@ class Augmentation(GetParams):
             raise ValueError("Unrecognized type value, only accepting 0, 1, 2, 3")
 
     def online_aug(self, video_in):
-        video_in = self.spatial_aug.spatial_augmentation(video_in)
-        video_in = self.temporal_aug.temporal_augmentation(video_in)
-        return video_in
+        """
+        In place change
+        :param video_in:
+        :param type:
+        :return:
+        """
+        if self._perform_aug():
+            self.spatial_aug.affine_video(video_in)
+        if self._perform_aug():
+            self.spatial_aug.sed_video(video_in)
+        if self._perform_aug():
+            self.spatial_aug.fixed_pattern_dropout(video_in)
+        if self._perform_aug():
+            self.spatial_aug.random_dropout(video_in)
 
     def _reverse_video(self, video_in):
         return np.flip(video_in, 0)
 
     def _mirror_video(self, video_in):
         return np.flip(video_in, 2)
+
+    def _perform_aug(self):
+        return np.random.choice([0, 1]) == 1
 
 
 class PrimaryProcess:
@@ -286,11 +296,13 @@ class ProcessLabel:
             parsed_result = self._parse_label(n)
             if parsed_result is None:
                 continue
-            self.all_samples_by_subject_id[parsed_result[0]] +=\
-                [(n, i) for i in range(4)]  # 4 different offline augmentations including original
-            self.all_labels_by_subject_id[parsed_result[0]] +=\
-                [parsed_result[1] for i in range(4)]
+            self.all_samples_by_subject_id[parsed_result[0]].append(n)
+            self.all_labels_by_subject_id[parsed_result[0]].append(parsed_result[1])
         for k in self.all_labels_by_subject_id:
+            # Because each sample needs off-line augmentation
+            # Repeat each sample four times
+            self.all_samples_by_subject_id[k] = np.repeat(self.all_samples_by_subject_id[k], off_line_aug_num)
+            self.all_labels_by_subject_id[k] = np.repeat(self.all_labels_by_subject_id[k], off_line_aug_num)
             self.all_labels_by_subject_id[k] = self._one_hot(self.all_labels_by_subject_id[k])
 
     def _one_hot(self, input_1d_array, label_num=19):

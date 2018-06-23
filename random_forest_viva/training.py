@@ -37,20 +37,33 @@ class Training:
         self.num_lr_decay = 0
 
     def run(self, leave_subject, max_epoch=300):
+        # print(self.all_samples_by_subject_id)
         # get training samples
-        training_samples = None
+        training_sample_names = None
         training_labels = None
         for k in self.all_labels_by_subject_id:
             if k == leave_subject:
                 continue
-            if training_samples is None:
-                training_samples = self.all_samples_by_subject_id[k]
+            if training_sample_names is None:
+                training_sample_names = self.all_samples_by_subject_id[k]  # (4*num_samples) of file names
             else:
-                training_samples = np.concatenate((training_samples, self.all_samples_by_subject_id[k]), axis=0)
+                training_sample_names = np.concatenate((training_sample_names,
+                                                       self.all_samples_by_subject_id[k]), axis=0)
             if training_labels is None:
-                training_labels = self.all_labels_by_subject_id[k]
+                training_labels = self.all_labels_by_subject_id[k]  # (4*num_samples) * 19
             else:
-                training_labels = np.concatenate((training_labels, self.all_labels_by_subject_id[k]), axis=0)
+                training_labels = np.concatenate((training_labels,
+                                                 self.all_labels_by_subject_id[k]), axis=0)
+
+        # test
+        training_sample_names = training_sample_names[:100]
+        # read all videos
+        training_raw_videos = []
+        for file_name_ind in range(0, len(training_sample_names), preprocess.off_line_aug_num):
+            print(file_name_ind)
+            training_raw_videos.append(
+                self.primary_process.read_both_channels(training_sample_names[file_name_ind]))
+        print('Reading videos done!')
 
         for epoch in range(max_epoch):
             for i in range(5):
@@ -60,14 +73,18 @@ class Training:
                 print('*'*30)
             self.augmentation = self._get_new_augmentation()
             self.batch_loss = []
-            for xbatch, ybatch in self._create_batch(training_samples, training_labels):
+            for xbatch, ybatch in self._create_batch(training_sample_names,
+                                                     training_raw_videos,
+                                                     training_labels):
                 loss = self.solver_instance.train_step(xbatch, ybatch, self.learning_rate)
                 self.batch_loss.append(loss)
             self.epoch_losses.append(np.mean(self.batch_loss))
             self._decay_lr()
+            if self.num_lr_decay == 4:
+                break
 
-    def _create_batch(self, training_samples, training_labels):
-        num_samples = len(training_samples)
+    def _create_batch(self, training_names, training_videos, training_labels):
+        num_samples = len(training_names)
         training_indices = list(range(num_samples))
         np.random.shuffle(training_indices)
         for i in range((num_samples - 1) // self.solver_hps.batch_size + 1):
@@ -76,13 +93,14 @@ class Training:
             training_ybatch = training_labels[training_indices[start:end]]
             training_xbatch = []
             for j in range(start, end):
-                file_name, offline_aug = training_samples[training_indices[j]]
+                video_ind = training_indices[j] // preprocess.off_line_aug_num
+                offline_aug = training_indices[j] % preprocess.off_line_aug_num
                 # print(offline_aug)
-                video = self.primary_process.read_both_channels(file_name)
-                video = self.augmentation.offline_aug(video, int(offline_aug))
-                if np.random.choice([0, 1]) == 1:
-                    # augmentation
-                    video = self.augmentation.online_aug(video)
+                # offline augmentation makes a copy, so need to explicitly make a copy
+                video = self.augmentation.offline_aug(training_videos[video_ind],
+                                                      int(offline_aug))
+                # augmentation
+                self.augmentation.online_aug(video)
                 training_xbatch.append(video)
 
             yield training_xbatch, training_ybatch

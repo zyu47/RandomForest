@@ -21,4 +21,4 @@ from scipy.ndimage.interpolation import shift
 # x = np.ones((3,2, 3))
 #
 # print(len([1,2,3,4,6,7,8,13,14,15,16,21,23,27,28,29,30,31,32]))
-print([['a', i] for i in range(4)])
+print(len(list(range(0, 3088, 4))))
