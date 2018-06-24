@@ -56,11 +56,11 @@ class Training:
                                                  self.all_labels_by_subject_id[k]), axis=0)
 
         # test
-        training_sample_names = training_sample_names[:100]
+        # training_sample_names = training_sample_names[:100]
         # read all videos
         training_raw_videos = []
         for file_name_ind in range(0, len(training_sample_names), preprocess.off_line_aug_num):
-            print(file_name_ind)
+            # print(file_name_ind)
             training_raw_videos.append(
                 self.primary_process.read_both_channels(training_sample_names[file_name_ind]))
         print('Reading videos done!')
@@ -109,6 +109,7 @@ class Training:
         if len(self.epoch_losses) < 40:
             return
         if self.epoch_losses[-1] / self.epoch_losses[-40] > 0.9:
+            self.epoch_losses = []
             self.learning_rate /= 2
             self.num_lr_decay += 1
 
