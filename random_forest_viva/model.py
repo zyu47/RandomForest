@@ -96,7 +96,7 @@ class Model:
         fc = tf.nn.xw_plus_b(input_matrix, w, b)
 
         if pre_softmax:
-            return tf.nn.relu(fc)
+            return fc
         else:
             return tf.nn.dropout(tf.nn.relu(fc), self.keep_prob)
 
