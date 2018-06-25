@@ -16,7 +16,6 @@ HParams = namedtuple("HParams",
                       "sigma", "alpha",
                       "ted_sigma", "t_scaling_range", "t_translate_range"])
 
-
 class GetParams:
     def __init__(self, hps):
         self.hps = hps
@@ -159,7 +158,7 @@ class Augmentation(GetParams):
                                       self.dropout_mask_depth, self.dropout_mask_intensity)
         self.temporal_aug = TemporalAug(self.t_aug_indices)
 
-    def offline_aug(self, video_in, type=0):
+    def offline_aug(self, video_input, type=0):
         """
         Offline augmentation of video by reversing, mirroing and/or both. It returns a copy
         with the original copy intact.
@@ -167,6 +166,7 @@ class Augmentation(GetParams):
         :param type: 0 - original, 1 - reversing, 2 - mirroring, 3 - reversing and mirroring
         :return: augmented video
         """
+        video_in = np.copy(video_input)
         if type == 0:
             return video_in
         elif type == 1:
@@ -226,7 +226,6 @@ class PrimaryProcess:
         path_intensity = os.path.join(self.intensity_vid_root, file_name)
         intensity_vid = self._read_and_process_one_avi(path_intensity, 'intensity')[:, :, :, np.newaxis]
         intensity_vid = (intensity_vid - np.mean(intensity_vid)) / np.std(intensity_vid)
-
         return self._nni_video(np.concatenate((intensity_vid, depth_vid), axis=3))
 
     def _read_and_process_one_avi(self, path, type):
@@ -239,7 +238,7 @@ class PrimaryProcess:
         res = []
         cap = av.open(path)
         for frame in cap.decode(video=0):
-            x = np.asarray(frame.to_image())[:, :, 0]  # one frame
+            x = np.asarray(frame.to_image())[:, :, 0].astype(np.float32)  # one frame
             x = cv2.resize(x, (self.final_img_shape[1], self.final_img_shape[0]))
             if type == 'intensity':
                 x = cv2.Sobel(x, cv2.CV_32F, 1, 1)
@@ -323,30 +322,34 @@ class ProcessLabel:
 
 
 if __name__ == '__main__':
-    # hps = HParams(final_depth=32, final_img_shape=(57, 125),
-    #               angle_range=(-10, 10), scaling_range=(-0.3, 0.3),
-    #               x_translate_range=(-8, 8), y_translate_range=(-4, 4),
-    #               sigma=10, alpha=6,
-    #               ted_sigma=4, t_scaling_range=(-0.2, 0.2), t_translate_range=(-4, 4) )
-    # pp = PrimaryProcess(hps.final_depth, hps.final_img_shape)
+    hps = HParams(final_depth=32, final_img_shape=(57, 125),
+                  angle_range=(-10, 10), scaling_range=(-0.3, 0.3),
+                  x_translate_range=(-8, 8), y_translate_range=(-4, 4),
+                  sigma=10, alpha=6,
+                  ted_sigma=4, t_scaling_range=(-0.2, 0.2), t_translate_range=(-4, 4) )
+    pp = PrimaryProcess(hps.final_depth, hps.final_img_shape)
     # agt = Augmentation(hps)
-    # video_test = pp.read_both_channels('03_10_02.avi')
+    video_test = pp.read_both_channels('01_13_01.avi')
+    aug = Augmentation(hps)
+    video_test = aug.offline_aug(video_test, 3)
+    aug.online_aug(video_test)
     # # video_test = agt.offline_aug(video_test, 3)
     # video_test = agt.temporal_aug.temporal_augmentation(video_test)
     # print(video_test.shape)
     # # # plt.imshow(pp._spatial_elastic_deform(res[0]))
     # # plt.imshow(res[0])
     # # # plt.imshow(pp._sobel(res[0]))
-    # plt.figure(figsize=(16,16))
-    # for i in range(32):
-    #     for j in range(2):
-    #         plt.subplot(8, 8, 2*i + j + 1)
-    #         plt.imshow(video_test[i, :, :, j])
+    plt.figure(figsize=(16,16))
+    for i in range(32):
+        for j in range(2):
+            plt.subplot(8, 8, 2*i + j + 1)
+            plt.imshow(video_test[i, :, :, j], cmap='Greys')
+    plt.show()
     # #
     # plt.savefig('result/temporal_aug.png')
     # # # plt.show()
 
-    pl = ProcessLabel()
-    pl.get_names_and_labels()
-    print(pl.all_labels_by_subject_id[1])
-    print(pl.all_samples_by_subject_id[1])
+    # pl = ProcessLabel()
+    # pl.get_names_and_labels()
+    # print(pl.all_labels_by_subject_id[1])
+    # print(pl.all_samples_by_subject_id[1])

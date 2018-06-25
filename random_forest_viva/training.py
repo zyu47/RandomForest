@@ -96,7 +96,7 @@ class Training:
                 video_ind = training_indices[j] // preprocess.off_line_aug_num
                 offline_aug = training_indices[j] % preprocess.off_line_aug_num
                 # print(offline_aug)
-                # offline augmentation makes a copy, so need to explicitly make a copy
+                # offline augmentation makes a copy, so no need to explicitly make a copy
                 video = self.augmentation.offline_aug(training_videos[video_ind],
                                                       int(offline_aug))
                 # augmentation
