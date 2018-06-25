@@ -57,9 +57,9 @@ class Training:
                                                  self.all_labels_by_subject_id[k]), axis=0)
 
         # test
-        training_sample_names = training_sample_names[:50]
-        testing_sample_names = testing_sample_names[:40]
-        testing_labels = testing_labels[:40]
+        # training_sample_names = training_sample_names[:50]
+        # testing_sample_names = testing_sample_names[:40]
+        # testing_labels = testing_labels[:40]
         # read all training videos
         training_raw_videos = []
         for file_name_ind in range(0, len(training_sample_names), preprocess.off_line_aug_num):
