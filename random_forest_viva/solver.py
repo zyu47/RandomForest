@@ -70,13 +70,14 @@ class Solver:
 
         return loss
 
-    def val_step(self, xbatch, ybatch):
+    def val_step(self, xbatch, ybatch, learning_rate):
         summary, loss, acc, step = self.sess.run(
             fetches=[self.summaries, self.model.loss,
                      self.model.accuracy, self.global_step],
             feed_dict={self.model.input: xbatch,
                        self.model.labels: ybatch,
-                       self.model.keep_prob: 1.0})
+                       self.model.keep_prob: 1.0,
+                       self.lr: learning_rate})
         print("Validation step %d: loss - %.2f; acc - %.2f%%" % (step, loss, acc * 100))
         self.val_writer.add_summary(summary, step)
 

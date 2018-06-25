@@ -5,7 +5,7 @@ import numpy as np
 import solver
 import preprocess
 
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 class Training:
     def __init__(self, depth_path='./data/videos/depth'):
@@ -41,43 +41,51 @@ class Training:
         # get training samples
         training_sample_names = None
         training_labels = None
+        testing_sample_names = None
+        testing_labels = None
         for k in self.all_labels_by_subject_id:
             if k == leave_subject:
-                continue
+                testing_sample_names = self.all_samples_by_subject_id[k]
+                testing_labels = self.all_labels_by_subject_id[k]
             if training_sample_names is None:
                 training_sample_names = self.all_samples_by_subject_id[k]  # (4*num_samples) of file names
+                training_labels = self.all_labels_by_subject_id[k]  # (4*num_samples) * 19
             else:
                 training_sample_names = np.concatenate((training_sample_names,
                                                        self.all_samples_by_subject_id[k]), axis=0)
-            if training_labels is None:
-                training_labels = self.all_labels_by_subject_id[k]  # (4*num_samples) * 19
-            else:
                 training_labels = np.concatenate((training_labels,
                                                  self.all_labels_by_subject_id[k]), axis=0)
 
         # test
-        # training_sample_names = training_sample_names[:100]
-        # read all videos
+        training_sample_names = training_sample_names[:50]
+        testing_sample_names = testing_sample_names[:40]
+        testing_labels = testing_labels[:40]
+        # read all training videos
         training_raw_videos = []
         for file_name_ind in range(0, len(training_sample_names), preprocess.off_line_aug_num):
             # print(file_name_ind)
             training_raw_videos.append(
                 self.primary_process.read_both_channels(training_sample_names[file_name_ind]))
+
+        # read all testing videos
+        testing_videos = []
+        for file_name_ind in range(0, len(testing_sample_names), preprocess.off_line_aug_num):
+            testing_videos.append(
+                self.primary_process.read_both_channels(testing_sample_names[file_name_ind]))
         print('Reading videos done!')
+        testing_labels = testing_labels[0:len(testing_labels):preprocess.off_line_aug_num]
 
         for epoch in range(max_epoch):
-            for i in range(5):
-                print('*'*30)
-            print('EPOCH %d' % epoch)
-            for i in range(5):
-                print('*'*30)
             self.augmentation = self._get_new_augmentation()
             self.batch_loss = []
             for xbatch, ybatch in self._create_batch(training_sample_names,
                                                      training_raw_videos,
                                                      training_labels):
+                print('Batch %d' %epoch)
                 loss = self.solver_instance.train_step(xbatch, ybatch, self.learning_rate)
                 self.batch_loss.append(loss)
+            # testing
+            self.solver_instance.val_step(testing_videos, testing_labels, self.learning_rate)
             self.epoch_losses.append(np.mean(self.batch_loss))
             self._decay_lr()
             if self.num_lr_decay == 4:
