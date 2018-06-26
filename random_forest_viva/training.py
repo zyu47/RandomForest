@@ -35,6 +35,7 @@ class Training:
         self.batch_loss = []
         self.learning_rate = 0.005
         self.num_lr_decay = 0
+        self.save_every = 20
 
     def run(self, leave_subject, max_epoch=300):
         # print(self.all_samples_by_subject_id)
@@ -89,7 +90,10 @@ class Training:
             self.epoch_losses.append(np.mean(self.batch_loss))
             self._decay_lr()
             if self.num_lr_decay == 4:
+                self.solver_instance.save_model()
                 break
+            if epoch % self.save_every == 0 and epoch != 0:
+                self.solver_instance.save_model()
 
     def _create_batch(self, training_names, training_videos, training_labels):
         num_samples = len(training_names)
