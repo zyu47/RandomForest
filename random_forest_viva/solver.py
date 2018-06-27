@@ -30,9 +30,7 @@ class Solver:
         self.lr = tf.placeholder(tf.float32, shape=[], name="learning_rate")
         self.momentum = tf.placeholder(tf.float32, shape=[], name="momentum")
         self.global_step = tf.Variable(0, name="global_step")
-        self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.lr,
-                                                    momentum=self.momentum,
-                                                    use_nesterov=True)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=self.lr)
 
         # summaries
         tf.summary.scalar("learning rate", self.lr)
