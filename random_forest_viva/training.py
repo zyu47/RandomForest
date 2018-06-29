@@ -82,7 +82,7 @@ class Training:
             for xbatch, ybatch in self._create_batch(training_sample_names,
                                                      training_raw_videos,
                                                      training_labels):
-                print('Batch %d' %epoch)
+                print('Epoch %d' %epoch)
                 loss = self.solver_instance.train_step(xbatch, ybatch, self.learning_rate)
                 self.batch_loss.append(loss)
             # testing
