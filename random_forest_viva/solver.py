@@ -21,6 +21,8 @@ class Solver:
         self.train_log_path = os.path.join(self.hps.log_path, 'train', self.hps.model_type)
         self.val_log_path = os.path.join(self.hps.log_path, 'val', self.hps.model_type)
         self.model_path = os.path.join(self.hps.log_path, 'model', self.hps.model_type, 'model.ckpt')
+        if not os.path.exists(os.path.dirname(self.model_path)):
+            os.makedirs(os.path.dirname(self.model_path))
 
         # create model and session
         self.model = Model(self.hps.batch_size, self.hps.weight_decay, self.hps.model_type)
