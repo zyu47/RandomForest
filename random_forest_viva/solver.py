@@ -21,8 +21,9 @@ class Solver:
         self.train_log_path = os.path.join(self.hps.log_path, 'train', self.hps.model_type)
         self.val_log_path = os.path.join(self.hps.log_path, 'val', self.hps.model_type)
         self.model_path = os.path.join(self.hps.log_path, 'model', self.hps.model_type, 'model.ckpt')
-        if not os.path.exists(os.path.dirname(self.model_path)):
-            os.makedirs(os.path.dirname(self.model_path))
+        for p in [self.train_log_path, self.val_log_path, self.model_path]:
+            if not os.path.exists(os.path.dirname(p)):
+                os.makedirs(os.path.dirname(p))
 
         # create model and session
         self.model = Model(self.hps.batch_size, self.hps.weight_decay, self.hps.model_type)
@@ -81,7 +82,7 @@ class Solver:
         print("Validation step %d: loss - %.2f; acc - %.2f%%" % (step, loss, acc * 100))
         self.val_writer.add_summary(summary, step)
 
-        return loss
+        return acc, loss
 
     def predict(self, xbatch):
         return self.sess.run(

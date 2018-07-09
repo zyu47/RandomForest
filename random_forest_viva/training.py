@@ -1,16 +1,18 @@
 import os
+import sys
 
 import numpy as np
 
 import solver
 import preprocess
 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 class Training:
-    def __init__(self, depth_path='./data/videos/depth'):
+    def __init__(self, leave_subject):
+        self.leave_subject = leave_subject
         self.solver_hps = solver.HParams(model_type='lrn',
-                                         log_path='result',
+                                         log_path='result/test_on_' + str(leave_subject),
                                          batch_size=40,
                                          weight_decay=0.005,
                                          lr_decay=2,
@@ -37,7 +39,7 @@ class Training:
         self.num_lr_decay = 0
         self.save_every = 20
 
-    def run(self, leave_subject, max_epoch=300):
+    def run(self, max_epoch=300):
         # print(self.all_samples_by_subject_id)
         # get training samples
         training_sample_names = None
@@ -45,7 +47,7 @@ class Training:
         testing_sample_names = None
         testing_labels = None
         for k in self.all_labels_by_subject_id:
-            if k == leave_subject:
+            if k == self.leave_subject:
                 testing_sample_names = self.all_samples_by_subject_id[k]
                 testing_labels = self.all_labels_by_subject_id[k]
             if training_sample_names is None:
@@ -76,6 +78,7 @@ class Training:
         print('Reading videos done!')
         testing_labels = testing_labels[0:len(testing_labels):preprocess.off_line_aug_num]
 
+        final_val_acc = None
         for epoch in range(max_epoch):
             self.augmentation = self._get_new_augmentation()
             self.batch_loss = []
@@ -86,14 +89,16 @@ class Training:
                 loss = self.solver_instance.train_step(xbatch, ybatch, self.learning_rate)
                 self.batch_loss.append(loss)
             # testing
-            self.solver_instance.val_step(testing_videos, testing_labels, self.learning_rate)
+            final_val_acc, _ = self.solver_instance.val_step(testing_videos, testing_labels, self.learning_rate)
             self.epoch_losses.append(np.mean(self.batch_loss))
             self._decay_lr()
             if self.num_lr_decay == 4:
-                self.solver_instance.save_model()
                 break
             if epoch % self.save_every == 0 and epoch != 0:
                 self.solver_instance.save_model()
+
+        self.solver_instance.save_model()
+        self._save_to_log(final_val_acc)
 
     def _create_batch(self, training_names, training_videos, training_labels):
         num_samples = len(training_names)
@@ -128,6 +133,11 @@ class Training:
     def _get_new_augmentation(self):
         return preprocess.Augmentation(self.preprocess_hps)
 
+    def _save_to_log(self, acc):
+        f = open('./log.txt', 'a+')
+        f.write('Test on subject %d: accuracy - %.2f%%\n' %(self.leave_subject, acc))
+        f.close()
+
 if __name__ == '__main__':
-    train = Training()
-    train.run(5)
+    train = Training(int(sys.argv[1]))
+    train.run()

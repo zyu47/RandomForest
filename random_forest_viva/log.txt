@@ -1,0 +1,1 @@
+Test on subject 5: accuracy - 92.04%
