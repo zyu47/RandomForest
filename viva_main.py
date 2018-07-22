@@ -1,8 +1,11 @@
+import os
 import numpy as np
 
 import random_forest_viva.preprocess as preprocess
 import random_forest_viva.solver as solver
 from forest import Forest
+
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 class RandomForestViva:
