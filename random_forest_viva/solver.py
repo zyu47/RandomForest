@@ -49,12 +49,7 @@ class Solver:
         self.train_writer = tf.summary.FileWriter(self.train_log_path, self.sess.graph)
         self.val_writer = tf.summary.FileWriter(self.val_log_path, self.sess.graph)
 
-        self.__initialize_model()
-
-    def __initialize_model(self):
-        if self.hps.is_loading_model:
-            self.saver.restore(self.sess, self.model_path)
-        else:
+        if not self.hps.is_loading_model:
             self.sess.run(tf.global_variables_initializer())
 
     def train_step(self, xbatch, ybatch, learning_rate):
@@ -93,6 +88,16 @@ class Solver:
     def save_model(self):
         self.saver.save(self.sess, self.model_path, self.global_step)
 
+    def load_model(self, log_path):
+        self.train_log_path = os.path.join(log_path, 'train', self.hps.model_type)
+        self.val_log_path = os.path.join(log_path, 'val', self.hps.model_type)
+        self.model_path = tf.train.latest_checkpoint(os.path.join(log_path, 'model', self.hps.model_type))
+        print(self.model_path)
+        self.saver.restore(self.sess, self.model_path)
+
+    # def get_features(self, input):
+    #     return self.sess.run(self.model.features, {self.model.input: input,
+    #                                                self.model.keep_prob: 1.0})
 
 if __name__ == '__main__':
     hps = HParams(model_type='lrn',

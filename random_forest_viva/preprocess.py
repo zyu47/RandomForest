@@ -273,7 +273,7 @@ class PrimaryProcess:
 
 
 class ProcessLabel:
-    def __init__(self):
+    def __init__(self, depth_path='./data/videos/depth'):
         self.gestures = [1,2,3,4,6,7,8,13,14,15,16,21,23,27,28,29,30,31,32]
         self.label_gesture_mapping = {self.gestures[i]: i for i in range(len(self.gestures))}
         self.label_gesture_mapping[70] = 7
@@ -287,9 +287,9 @@ class ProcessLabel:
         self.all_samples_by_subject_id = {i: [] for i in range(1, 9)}
         self.all_labels_by_subject_id = {i: [] for i in range(1, 9)}
 
-        self.get_names_and_labels()
+        self.get_names_and_labels(depth_path)
 
-    def get_names_and_labels(self, path='./data/videos/depth'):
+    def get_names_and_labels(self, path):
         file_names = os.listdir(path)
         for n in file_names:
             parsed_result = self._parse_label(n)
