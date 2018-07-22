@@ -1,7 +1,4 @@
-try:
-    from . import parameters
-except ImportError:
-    import parameters
+import parameters
 
 import random
 import numpy as np

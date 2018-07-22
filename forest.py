@@ -1,7 +1,4 @@
-try:
-    from .tree import Tree
-except ImportError:
-    from tree import Tree
+from tree import Tree
 import numpy as np
 import pickle
 import os

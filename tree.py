@@ -1,7 +1,4 @@
-try:
-    from .node import Node
-except ImportError:
-    from node import Node
+from node import Node
 
 import random
 
