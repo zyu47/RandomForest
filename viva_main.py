@@ -1,4 +1,6 @@
 import os
+import time
+import datetime
 import numpy as np
 
 import random_forest_viva.preprocess as preprocess
@@ -37,6 +39,7 @@ class RandomForestViva:
         self.solver = solver.Solver(self.solver_hps)
 
     def run(self):
+        self._write_result(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         for leave_subject in self.leave_subject_ids:
             self.solver.load_model('random_forest_viva/result/test_on_' + str(leave_subject))
             acc = self._get_features()
@@ -84,6 +87,7 @@ class RandomForestViva:
     def _write_result(self, content):
         f = open('./log.txt', 'a+')
         f.write(content)
+        f.write('\n')
         f.close()
 
     def _read_all_videos(self):
