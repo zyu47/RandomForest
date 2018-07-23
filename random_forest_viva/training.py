@@ -50,6 +50,7 @@ class Training:
             if k == self.leave_subject:
                 testing_sample_names = self.all_samples_by_subject_id[k]
                 testing_labels = self.all_labels_by_subject_id[k]
+                continue
             if training_sample_names is None:
                 training_sample_names = self.all_samples_by_subject_id[k]  # (4*num_samples) of file names
                 training_labels = self.all_labels_by_subject_id[k]  # (4*num_samples) * 19
