@@ -1,0 +1,17 @@
+2018-07-21 23:10:24
+Neural net accuracy tested on subject 1: 87.34%
+Forest accuracy tested on subject 1: 88.50%
+Neural net accuracy tested on subject 2: 95.59%
+Forest accuracy tested on subject 2: 92.79%
+Neural net accuracy tested on subject 3: 87.57%
+Forest accuracy tested on subject 3: 84.35%
+Neural net accuracy tested on subject 4: 7.12%
+Forest accuracy tested on subject 4: 11.21%
+Neural net accuracy tested on subject 5: 86.33%
+Forest accuracy tested on subject 5: 89.38%
+Neural net accuracy tested on subject 6: 90.28%
+Forest accuracy tested on subject 6: 88.79%
+Neural net accuracy tested on subject 7: 7.12%
+Forest accuracy tested on subject 7: 6.96%
+Neural net accuracy tested on subject 8: 7.12%
+Forest accuracy tested on subject 8: 7.69%
