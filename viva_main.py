@@ -42,8 +42,7 @@ class RandomForestViva:
         self._write_result(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         for leave_subject in self.leave_subject_ids:
             self.solver.load_model('random_forest_viva/result/test_on_' + str(leave_subject))
-            acc = self._get_features()
-            self._write_result('Neural net accuracy tested on subject %d: %.2f%%' % (leave_subject, acc * 100))
+            self._get_features(leave_subject)
             # split to train/test
             trainng_features = []
             training_labels = []
@@ -61,25 +60,20 @@ class RandomForestViva:
                                                    np.argmax(self.all_labels_by_subject_id[leave_subject], axis=1))
             self._write_result('Forest accuracy tested on subject %d: %.2f%%' % (leave_subject, forest_pred_acc*100))
 
-    def _get_features(self):
+    def _get_features(self, leave_subject):
         """
         Retrieve all features for a particular model
         :return:
         """
-        nn_acc_all = []
         for k in self.all_videos_by_subject_id:
             acc, self.all_features_by_subject_id[k] =\
                 self.solver.sess.run([self.solver.model.accuracy, self.solver.model.features],
                                      {self.solver.model.input: self.all_videos_by_subject_id[k],
                                       self.solver.model.labels: self.all_labels_by_subject_id[k],
                                       self.solver.model.keep_prob: 1.0})
-            nn_acc_all.append(acc)
-        acc = np.sum(np.array(nn_acc_all) *\
-              np.array([len(self.all_labels_by_subject_id[k]) for k in self.all_labels_by_subject_id]))
-        acc /= np.sum([len(self.all_labels_by_subject_id[k]) for k in self.all_labels_by_subject_id])
-
+            if k == leave_subject:
+                self._write_result('Neural net accuracy tested on subject %d: %.2f%%' % (leave_subject, acc * 100))
         print('Retrieved all features')
-        return acc
 
     def _get_forest_acc(self, pre_labels, true_labels):
         return np.mean(np.equal(pre_labels, true_labels).astype(np.float32))
