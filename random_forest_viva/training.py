@@ -93,8 +93,8 @@ class Training:
             final_val_acc, _ = self.solver_instance.val_step(testing_videos, testing_labels, self.learning_rate)
             self.epoch_losses.append(np.mean(self.batch_loss))
             self._decay_lr()
-            if self.num_lr_decay == 4:
-                break
+            # if self.num_lr_decay == 4:
+            #     break
             if epoch % self.save_every == 0 and epoch != 0:
                 self.solver_instance.save_model()
 

@@ -1,4 +1,4 @@
-from .solver import Solver
+from solver import Solver
 
 
 class HandGestureRecognition:
