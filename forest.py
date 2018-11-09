@@ -5,16 +5,19 @@ except:
 import numpy as np
 import pickle
 import os
+from threading import Thread, Lock
 
 frame_per_clip = 15
 feature_dim = 1024
 
 
 class Forest:
-    def __init__(self):
+    def __init__(self, num_workers=5, item_per_node=None):
         self.trees = []  # trees in forest
         self.sample_dim = None  # the dimensionality of the samples
         self.next_ind = None  # what will be the next index of novel sample
+        self.num_workers = num_workers  # Number of workers for parallization
+        self.item_per_node = item_per_node  # The maximum number of items in a node before splitting
 
     @staticmethod
     def load_forest(file_name, load_dir=None):
@@ -51,26 +54,43 @@ class Forest:
         pickle.dump(self, f)
         f.close()
 
-    def build_forest(self, samples, labels, n_trees=50, verbose=True):
+    def build_forest(self, samples, labels, n_trees=50, normalized_sample=False, verbose=True):
         """
         :param samples: Training samples to build trees, with dimension: nSamples*feature_dim (every frame),
                         nSamples[*frame_per_clip]*feature_dim (every clip) (nSamples >= 2)
         :param labels:  Labels of training samples, with dimension: nSamples
         :param n_trees: Number of trees to be built, default to 50 trees
+        :param num_workers: Number of parallel workers to build trees
+        :param normalized_sample: Whether the input sample is a normalized numpy array
         :param verbose: Whether to print progress
         :return:        None
         """
 
-        # first normalize the samples
-        self.sample_dim = len(np.array(samples[0]).shape)  # if frame, ==1; if clip, ==2
-        samples_norm = self._normalize_sample(samples)
+        if normalized_sample:
+            samples_norm = samples
+        else:
+            # first normalize the samples
+            self.sample_dim = len(np.array(samples[0]).shape)  # if frame, ==1; if clip, ==2
+            samples_norm = self._normalize_sample(samples)
 
-        for i in range(n_trees):
+        lock = Lock()
+        def tree_builder(trees, num_tree_per_thread):
+            for i in range(num_tree_per_thread):
+                t = Tree(self.item_per_node)
+                t.build_tree(samples_norm, labels)
+                lock.acquire()
+                trees.append(t)
+                lock.release()
+
+        workers = []
+        for i in range(self.num_workers):
             if verbose:
-                print('Building Tree #' + str(i))
-            t = Tree()
-            t.build_tree(samples_norm, labels)
-            self.trees.append(t)
+                print('In progress: building Tree from worker #' + str(i))
+            workers.append(Thread(target=tree_builder, args=(self.trees, n_trees // self.num_workers)))
+            workers[-1].start()
+
+        for w in workers:
+            w.join()
 
         self.next_ind = np.max(labels) + 10  # set next index to be 10 larger than the maximum index of labels
 
@@ -92,23 +112,39 @@ class Forest:
         for t in self.trees:
             t.add_new(samples_norm, labels)
 
-    def find_nn(self, samples):
+    def find_nn(self, samples, normalized_sample=False):
         """
         :param samples: A set of samples that need to find their labels
         :return:        The predicted label and distance for each sample
         """
-        samples_norm = self._normalize_sample(samples)
-        best_labels = [-2] * samples_norm.shape[0]
-        # (feature_dim*10)  is used as upper bound of distance, actual distance could be smaller
-        closest_dists = [feature_dim*10] * samples_norm.shape[0]
-        for i, s in enumerate(samples_norm):
-            for t in self.trees:
-                label, dist = t.find_nn_label(s)
-                if dist < closest_dists[i]:
-                    best_labels[i] = label
-                    closest_dists[i] = dist
-            if best_labels[i] == -2:
-                best_labels[i] = 2  # 2 is gesture 'other'
+        if normalized_sample:
+            samples_norm = samples
+        else:
+            samples_norm = self._normalize_sample(samples)
+        best_labels = [[] for i in range(samples_norm.shape[0])]
+        closest_dists = [[] for i in range(samples_norm.shape[0])]
+
+        lock = Lock()
+        def label_finder(tree_subset, worker_ind):
+            for i, s in enumerate(samples_norm):
+                if i % 5000 == 0:
+                    print('Looking for sample: ', i, 'by worker', worker_ind)
+                for t in tree_subset:
+                    label, dist = t.find_nn_label(s)
+                    lock.acquire()
+                    best_labels[i].append(label)
+                    closest_dists[i].append(dist)
+                    lock.release()
+
+        workers = []
+        num_trees_per_worker = len(self.trees) // self.num_workers
+        for i in range(self.num_workers):
+            workers.append(Thread(target=label_finder,
+                                  args=(self.trees[i * num_trees_per_worker: (i + 1) * num_trees_per_worker], i)))
+            workers[-1].start()
+
+        for w in workers:
+            w.join()
 
         return best_labels, closest_dists
 
