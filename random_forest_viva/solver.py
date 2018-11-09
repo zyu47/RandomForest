@@ -3,7 +3,10 @@ from collections import namedtuple
 
 import tensorflow as tf
 
-from model import Model
+try:
+    from model import Model
+except:
+    from .model import Model
 
 
 HParams = namedtuple("HParams",
