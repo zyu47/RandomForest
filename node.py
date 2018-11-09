@@ -1,4 +1,7 @@
-import parameters
+try:
+    import parameters
+except:
+    from . import parameters
 
 import random
 import numpy as np
@@ -6,11 +9,14 @@ from scipy.stats import pearsonr
 
 
 class Node:
-    def __init__(self):
+    def __init__(self, item_per_node=None):
         self._left_child = None
         self._right_child = None
         self._internal_node = False  # Indicate this node is a splitting node or collecting node
-        self._item_cnt_cap = parameters.item_cnt_cap  # The maximum number of items in a node before splitting
+        if item_per_node is None:
+            self._item_cnt_cap = parameters.item_cnt_cap  # The maximum number of items in a node before splitting
+        else:
+            self._item_cnt_cap = item_per_node
         self._split_method = parameters.split_mehod  # The choice of splitting criteria
         self._distance_metric_type = parameters.distance_metric_type  # The type of distance metric.
 

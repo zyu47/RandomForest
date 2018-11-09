@@ -7,7 +7,7 @@ import random_forest_viva.preprocess as preprocess
 import random_forest_viva.solver as solver
 from forest import Forest
 
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 
 
 class RandomForestViva:
@@ -29,7 +29,7 @@ class RandomForestViva:
 
         # model-based attributes
         self.solver_hps = solver.HParams(model_type='lrn',
-                                         log_path='random_forest_viva/result/test_on_8',
+                                         log_path='random_forest_viva/result/highest_acc/test_on_8',
                                          batch_size=40,
                                          weight_decay=0.005,
                                          lr_decay=2,
@@ -41,7 +41,7 @@ class RandomForestViva:
     def run(self):
         self._write_result(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         for leave_subject in self.leave_subject_ids:
-            self.solver.load_model('random_forest_viva/result/test_on_' + str(leave_subject))
+            self.solver.load_model('random_forest_viva/result/highest_acc/test_on_' + str(leave_subject))
             self._get_features(leave_subject)
             # split to train/test
             trainng_features = []
@@ -58,6 +58,7 @@ class RandomForestViva:
             # print(predicted_labels, np.argmax(self.all_labels_by_subject_id[leave_subject], axis=1))
             forest_pred_acc = self._get_forest_acc(predicted_labels,
                                                    np.argmax(self.all_labels_by_subject_id[leave_subject], axis=1))
+            print(predicted_labels[:10], np.argmax(self.all_labels_by_subject_id[leave_subject], axis=1)[:10])
             self._write_result('Forest accuracy tested on subject %d: %.2f%%' % (leave_subject, forest_pred_acc*100))
 
     def _get_features(self, leave_subject):
@@ -104,5 +105,6 @@ class RandomForestViva:
             # print(np.array(self.all_videos_by_subject_id[k]).shape)
 
 if __name__ == '__main__':
-    t = RandomForestViva([1,2,3,4,5,6,7,8])
+    # t = RandomForestViva([1,2,3,4,5,6,7,8])
+    t = RandomForestViva([8])
     t.run()

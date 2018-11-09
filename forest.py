@@ -1,4 +1,7 @@
-from tree import Tree
+try:
+    from tree import Tree
+except:
+    from .tree import Tree
 import numpy as np
 import pickle
 import os
